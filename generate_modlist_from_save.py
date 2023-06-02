@@ -1,4 +1,6 @@
 """Script allowing to extract your mod list from a RimWorld save file."""
+import argparse
+import csv
 import dataclasses
 import logging
 import xml.etree.ElementTree as ET
@@ -72,6 +74,21 @@ def extract_mod_from_save(input_save_path: Path) -> tuple[str, list[ModFromSave]
     return game_version, result
 
 
+def prepare_output_paths(input_path: Path, output_dir: Path) -> tuple[Path, Path]:
+    """
+    Get output paths for rml and csv from the input filename and output directory.
+
+    :param input_path:
+        path to the save file
+    :param output_dir:
+        path to the output folder
+    """
+    input_stem = input_path.stem
+    output_rml = output_dir / (input_stem + ".rml")
+    output_csv = output_dir / (input_stem + ".csv")
+    return output_rml, output_csv
+
+
 def mods_to_modlist(game_version: str, mods: list[ModFromSave], output_path: Path):
     """
     Write a RimWorld mod list file to a designated location.
@@ -79,7 +96,7 @@ def mods_to_modlist(game_version: str, mods: list[ModFromSave], output_path: Pat
     :param game_version:
         string with the game version
     :param mods:
-        the list of mods to write to
+        the list of mods to write
     :param output_path:
         the path to write the rml file at
     """
@@ -99,7 +116,7 @@ def mods_to_modlist(game_version: str, mods: list[ModFromSave], output_path: Pat
         ET.SubElement(modNames_node, "li").text = mod_item.mod_name
         ET.SubElement(modList_ids_node, "li").text = mod_item.mod_id
         ET.SubElement(modList_names_node, "li").text = mod_item.mod_name
-    logger.info(f"Writing modlist to {output_path}")
+    logger.info(f"Writing modlist as rml to '{output_path}'")
     ET.ElementTree(base_doc).write(
         output_path,
         xml_declaration=True,
@@ -107,16 +124,36 @@ def mods_to_modlist(game_version: str, mods: list[ModFromSave], output_path: Pat
     )
 
 
+def mods_to_csv(mods: list[ModFromSave], output_path: Path):
+    """
+    Export the mod list to a csv file.
+
+    :param mods:
+        the list of mods to write
+    :param output_path:
+        the path to write the rml file at
+    """
+    field_names = ["mod_id", "mod_name", "mod_steam_id"]
+    sorted_mods = sorted(mods, key=lambda m: m.mod_id)
+    logger.info(f"Writing modlist as csv to '{output_path}'")
+    with open(output_path, "w") as f:
+        writer = csv.DictWriter(f, field_names, delimiter=";")
+        writer.writeheader()
+        for mod in sorted_mods:
+            writer.writerow(dataclasses.asdict(mod))
+
+
 def main():
     """Entrypoint function."""
-    game_version, mod_list = extract_mod_from_save(INPUT_SAVE_PATH)
-    mods_to_modlist(game_version, mod_list, OUTPUT_MODLIST_PATH)
+    parser = argparse.ArgumentParser(description="Process some integers.")
+    parser.add_argument("--input-path", type=Path, help="path to the rws")
+    parser.add_argument("--output-dir", type=Path, help="folder where to write to")
+    args = parser.parse_args()
 
-    mod_ids = [mod.mod_id for mod in mod_list]
-    sorted_mod_ids = sorted(mod_ids)
-    with open("mod_ids.txt", "w") as f:
-        for mod_id in sorted_mod_ids:
-            f.write(mod_id + "\n")
+    game_version, mod_list = extract_mod_from_save(args.input_path)
+    output_rml, output_csv = prepare_output_paths(args.input_path, args.output_dir)
+    mods_to_modlist(game_version, mod_list, output_rml)
+    mods_to_csv(mod_list, output_csv)
 
 
 if __name__ == "__main__":
