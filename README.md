@@ -7,7 +7,7 @@ This project allow you to extract your modlist from a Rimworld save file.
 To make it easier,
 this script won't have any runtime requirements.
 
-You just need to have **Python 3.10** installed.
+You just need to have **Python 3.9+** installed.
 You can install Python from [python.org](https://www.python.org/downloads/)
 if it's not preinstalled in your system.
 
