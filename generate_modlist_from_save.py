@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.DEBUG)
 
+WIKI_SAVE_FILE_URL = "https://www.rimworldwiki.com/wiki/Save_file"
+
 INPUT_SAVE_PATH = "rws"
 OUTPUT_MODLIST_PATH = "rml"
 
@@ -34,10 +36,21 @@ def extract_mod_from_save(input_save_path: Path) -> tuple[str, list[ModFromSave]
     :return:
         a tuple of two elements: the game version and the list of mod
     """
-    logger.info(f"Loading mods from save file at {input_save_path}")
-    tree = ET.parse(input_save_path)
+    logger.info(f"Loading mods from save file at '{input_save_path}'")
+    try:
+        # todo: should we use iterparse instead?
+        tree = ET.parse(input_save_path)
+    except ET.ParseError as ex:
+        logger.error(f"Failed to parse xml save file: {ex}")
+        raise ex
     root = tree.getroot()
     meta_el = [child for child in root if child.tag == "meta"]
+    if len(meta_el) == 0:
+        err_msg = "Couldn't find 'meta' element in rws file."
+        logger.error(err_msg)
+        logger.error("Check that you provided the correct path ({WIKI_SAVE_FILE_URL})")
+        raise RuntimeError(err_msg)
+
     game_version = None
     for meta_child in meta_el[0]:
         if meta_child.tag == "gameVersion":
@@ -50,9 +63,20 @@ def extract_mod_from_save(input_save_path: Path) -> tuple[str, list[ModFromSave]
             mod_names = [modname.text for modname in meta_child]
         else:
             logger.debug(f"Skipping child: {meta_child.tag}")
-    assert game_version is not None
-    assert len(mod_ids) == len(mod_steam_ids)
-    assert len(mod_ids) == len(mod_names)
+
+    if game_version is None:
+        err_msg = "Game version is empty"
+        logger.error(err_msg)
+        raise RuntimeError(err_msg)
+    if len(mod_ids) != len(mod_steam_ids) or len(mod_ids) != len(mod_names):
+        err_msg = (
+            "Different number of mod ids/names/steamids "
+            f"({len(mod_ids)}/{len(mod_steam_ids)}/{len(mod_names)})"
+        )
+        logger.error(err_msg)
+        logger.error("This might indicate a problem within your save file structure")
+        raise RuntimeError(err_msg)
+
     result = []
     for mod_id, mod_steam, mod_name in zip(
         mod_ids,
@@ -83,6 +107,14 @@ def prepare_output_paths(input_path: Path, output_dir: Path) -> tuple[Path, Path
     :param output_dir:
         path to the output folder
     """
+    if not input_path.exists():
+        err_msg = f"Cannot find save file at '{input_path}'"
+        logger.error(err_msg)
+        raise FileNotFoundError(input_path)
+    if not output_dir.is_dir():
+        err_msg = f"Output dir '{output_dir}' is not a folder"
+        logger.error(err_msg)
+        raise RuntimeError(err_msg)
     input_stem = input_path.stem
     output_rml = output_dir / (input_stem + ".rml")
     output_csv = output_dir / (input_stem + ".csv")
@@ -100,6 +132,10 @@ def mods_to_modlist(game_version: str, mods: list[ModFromSave], output_path: Pat
     :param output_path:
         the path to write the rml file at
     """
+    if len(mods) == 0:
+        logger.info("No mods were passed, skipping")
+        return
+
     base_doc = ET.Element("savedModList")
     meta_li = ET.SubElement(base_doc, "meta")
     game_version_node = ET.SubElement(meta_li, "gameVersion")
@@ -133,6 +169,10 @@ def mods_to_csv(mods: list[ModFromSave], output_path: Path):
     :param output_path:
         the path to write the rml file at
     """
+    if len(mods) == 0:
+        logger.info("No mods were passed, skipping")
+        return
+
     field_names = ["mod_id", "mod_name", "mod_steam_id"]
     sorted_mods = sorted(mods, key=lambda m: m.mod_id)
     logger.info(f"Writing modlist as csv to '{output_path}'")
@@ -150,8 +190,8 @@ def main():
     parser.add_argument("--output-dir", type=Path, help="folder where to write to")
     args = parser.parse_args()
 
-    game_version, mod_list = extract_mod_from_save(args.input_path)
     output_rml, output_csv = prepare_output_paths(args.input_path, args.output_dir)
+    game_version, mod_list = extract_mod_from_save(args.input_path)
     mods_to_modlist(game_version, mod_list, output_rml)
     mods_to_csv(mod_list, output_csv)
 

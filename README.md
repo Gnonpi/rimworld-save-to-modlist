@@ -2,7 +2,7 @@
 
 This project allow you to extract your modlist from a Rimworld save file.
 
-## How to run
+## How to run it
 
 To make it easier,
 this script won't have any runtime requirements.
@@ -13,6 +13,7 @@ if it's not preinstalled in your system.
 
 Then locate your save file.
 It should be a `.rws` (weighting some MBs).
+[This RimWorld wiki page](https://www.rimworldwiki.com/wiki/Save_file) might help finding it.
 Note the path to it.
 
 Then locate your save file and run:
