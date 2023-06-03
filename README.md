@@ -14,6 +14,7 @@ if it's not preinstalled in your system.
 Then locate your save file.
 It should be a `.rws` (weighting some MBs).
 [This RimWorld wiki page](https://www.rimworldwiki.com/wiki/Save_file) might help finding it.
+It might be a good idea to back it up.
 Note the path to it.
 
 Then locate your save file and run:

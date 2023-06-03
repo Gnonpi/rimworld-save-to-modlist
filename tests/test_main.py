@@ -1,15 +1,16 @@
-import pytest
-from generate_modlist_from_save import (
-    prepare_output_paths,
-    extract_mod_from_save,
-    mods_to_modlist,
-    mods_to_csv,
-    process_rws_file,
-    ModFromSave,
-)
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
+
+from generate_modlist_from_save import (
+    ModFromSave,
+    extract_mod_from_save,
+    mods_to_csv,
+    mods_to_modlist,
+    prepare_output_paths,
+    process_rws_file,
+)
 
 SAMPLE_EXPECTED_DATA = {
     "game_version": "1.4.3704 rev898",
@@ -19,8 +20,8 @@ SAMPLE_EXPECTED_DATA = {
             "name": "Harmony",
             "id": "brrainz.harmony",
             "steam_id": "2009463077",
-        }
-    }
+        },
+    },
 }
 
 
@@ -41,7 +42,7 @@ class TestExtractModFromSave:
         base_doc = ET.Element("someblock")
         ET.SubElement(base_doc, "somesubblock")
         ET.ElementTree(base_doc).write(
-            p, 
+            p,
             xml_declaration=True,
             encoding="utf-8",
         )
@@ -50,24 +51,26 @@ class TestExtractModFromSave:
 
     def test_different_number_ids_and_names(self, tmp_path):
         p = tmp_path / "different-number-mod-attrs.rws"
-        p.write_text("""<?xml version="1.0" encoding="utf-8"?>
+        p.write_text(
+            """<?xml version="1.0" encoding="utf-8"?>
 <savegame>
-	<meta>
-		<gameVersion>1.0.0 rev0</gameVersion>
-		<modIds>
+    <meta>
+        <gameVersion>1.0.0 rev0</gameVersion>
+        <modIds>
             <li>aaa.first</li>
             <li>bbb.second</li>
         </modIds>
         <modSteamIds>
             <li>0.0.1</li>
-            <!-- missing ids --> 
+            <!-- missing ids -->
         </modSteamIds>
         <modNames>
             <li>First</li>
             <li>Second</li>
         </modNames>
     </meta>
-</savegame>""")
+</savegame>"""
+        )
         with pytest.raises(RuntimeError):
             extract_mod_from_save(p)
 
@@ -100,7 +103,7 @@ class TestPrepareOutputPath:
         p_out.write_text("out")
         with pytest.raises(RuntimeError):
             prepare_output_paths(p_in, p_out)
-        
+
     def test_prepare_output_paths(self, tmp_path):
         p_in = tmp_path / "file-stem.rws"
         p_in.write_text("in")
