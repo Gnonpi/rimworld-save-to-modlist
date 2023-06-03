@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "save_to_modlist"
+version = "0.0.1"
+description = "Extract your modlist from a RimWorld save file"
+authors = ["LeGnonpi <legnonpi@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+# it's easier for people to not have any runtime dependencies
+
+[tool.poetry.dev-dependencies]
+pre-commit = "^3.3.2"
+pytest = "^7.3.1"
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = [
+    "tests"
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
