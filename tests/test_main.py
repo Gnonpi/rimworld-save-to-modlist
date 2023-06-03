@@ -4,6 +4,7 @@ from generate_modlist_from_save import (
     extract_mod_from_save,
     mods_to_modlist,
     mods_to_csv,
+    process_rws_file,
     ModFromSave,
 )
 import xml.etree.ElementTree as ET
@@ -100,7 +101,6 @@ class TestPrepareOutputPath:
         with pytest.raises(RuntimeError):
             prepare_output_paths(p_in, p_out)
         
-
     def test_prepare_output_paths(self, tmp_path):
         p_in = tmp_path / "file-stem.rws"
         p_in.write_text("in")
@@ -144,7 +144,13 @@ class TestModsToCsv:
 
 
 class TestWholeScript:
-    def test_on_sample(self):
-        raise NotImplementedError
-
-
+    def test_on_sample(self, tmp_path):
+        d_out = tmp_path / "output_dir"
+        d_out.mkdir()
+        input_path = get_sample_path()
+        output_rml, output_csv = prepare_output_paths(input_path, d_out)
+        process_rws_file(input_path, output_rml, output_csv)
+        expected_rml = (input_path.parent / "sample-expected.rwl").read_text()
+        expected_csv = (input_path.parent / "sample-expected.csv").read_text()
+        assert output_rml.read_text() == expected_rml
+        assert output_csv.read_text() == expected_csv

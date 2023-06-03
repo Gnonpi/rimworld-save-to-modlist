@@ -13,9 +13,6 @@ logger.setLevel(logging.DEBUG)
 
 WIKI_SAVE_FILE_URL = "https://www.rimworldwiki.com/wiki/Save_file"
 
-INPUT_SAVE_PATH = "rws"
-OUTPUT_MODLIST_PATH = "rml"
-
 
 @dataclasses.dataclass(frozen=True)
 class ModFromSave:
@@ -183,6 +180,22 @@ def mods_to_csv(mods: list[ModFromSave], output_path: Path):
             writer.writerow(dataclasses.asdict(mod))
 
 
+def process_rws_file(input_path: Path, output_rml: Path, output_csv: Path):
+    """
+    Read the mods from input_path and write the modlist to output_rml, the csv to output_csv.
+
+    :param input_path:
+        path to the rws file to read
+    :param output_rml:
+        path to the rml to write to
+    :param output_csv:
+        path to the csv to write to
+    """
+    game_version, mod_list = extract_mod_from_save(input_path)
+    mods_to_modlist(game_version, mod_list, output_rml)
+    mods_to_csv(mod_list, output_csv)
+
+
 def main():
     """Entrypoint function."""
     parser = argparse.ArgumentParser(description="Process some integers.")
@@ -191,9 +204,7 @@ def main():
     args = parser.parse_args()
 
     output_rml, output_csv = prepare_output_paths(args.input_path, args.output_dir)
-    game_version, mod_list = extract_mod_from_save(args.input_path)
-    mods_to_modlist(game_version, mod_list, output_rml)
-    mods_to_csv(mod_list, output_csv)
+    process_rws_file(args.input_path, output_rml, output_csv)
 
 
 if __name__ == "__main__":
